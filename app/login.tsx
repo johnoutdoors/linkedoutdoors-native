@@ -1,3 +1,4 @@
+import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
@@ -5,6 +6,7 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLogin, setIsLogin] = useState(true);
+  const router = useRouter();
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
@@ -93,6 +95,11 @@ export default function LoginScreen() {
           </TouchableOpacity>
         </View>
 
+      {/* Skip */}
+        <TouchableOpacity onPress={() => router.replace('/(tabs)')} style={styles.skipBtn}>
+          <Text style={styles.skipText}>Skip for now →</Text>
+        </TouchableOpacity>
+
         {/* Footer */}
         <Text style={styles.footer}>By continuing you agree to our Terms of Service and Privacy Policy</Text>
 
@@ -131,6 +138,8 @@ const styles = StyleSheet.create({
   submitBtnText: { color: 'white', fontSize: 16, fontWeight: '700' },
   toggle: { alignItems: 'center' },
   toggleText: { fontSize: 14, color: '#6b6560' },
-  toggleLink: { color: '#3a5f3a', fontWeight: '700' },
+toggleLink: { color: '#3a5f3a', fontWeight: '700' },
   footer: { textAlign: 'center', fontSize: 11, color: 'rgba(164,184,144,0.4)', lineHeight: 16 },
+  skipBtn: { alignItems: 'center', marginBottom: 16 },
+  skipText: { fontSize: 13, color: 'rgba(164,184,144,0.6)', fontWeight: '600' },
 });
