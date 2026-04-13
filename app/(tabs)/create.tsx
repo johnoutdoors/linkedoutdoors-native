@@ -51,9 +51,13 @@ export default function CreateScreen() {
         <View style={styles.photoStrip}>
           <View style={styles.photoPlaceholder1}>
             <Text style={styles.photoEmoji}>🌅</Text>
+            <TouchableOpacity style={styles.removePhoto}>
+              <Text style={styles.removePhotoText}>✕</Text>
+            </TouchableOpacity>
           </View>
           <TouchableOpacity style={styles.addPhoto}>
-            <Text style={styles.addPhotoText}>+</Text>
+            <Text style={styles.addPhotoIcon}>📷</Text>
+            <Text style={styles.addPhotoText}>Add Photo</Text>
           </TouchableOpacity>
         </View>
 
@@ -104,7 +108,10 @@ const styles = StyleSheet.create({
   photoPlaceholder1: { width: 90, height: 90, borderRadius: 12, backgroundColor: '#5a8a5a', alignItems: 'center', justifyContent: 'center' },
   photoEmoji: { fontSize: 32 },
   addPhoto: { width: 90, height: 90, borderRadius: 12, borderWidth: 2, borderColor: '#e5e5ea', borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center' },
-  addPhotoText: { fontSize: 28, color: '#c7c7cc' },
+ addPhotoText: { fontSize: 11, color: '#8e8e93', fontWeight: '500', textAlign: 'center' },
+  removePhoto: { position: 'absolute', top: 6, right: 6, width: 20, height: 20, borderRadius: 10, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center' },
+  removePhotoText: { color: 'white', fontSize: 10, fontWeight: '700' },
+addPhotoIcon: { fontSize: 22, marginBottom: 2, marginTop: -8 },
   toolbar: { flexDirection: 'row', gap: 24, paddingTop: 16, borderTopWidth: 0.5, borderTopColor: '#e5e5ea' },
   toolItem: { alignItems: 'center', gap: 4 },
   toolEmoji: { fontSize: 22 },
