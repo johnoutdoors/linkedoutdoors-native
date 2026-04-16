@@ -8,6 +8,7 @@ export default function LoginScreen() {
   const [isLogin, setIsLogin] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
 
   const { signIn, signUp } = useAuth();
 
@@ -23,6 +24,7 @@ export default function LoginScreen() {
         await signIn(email.trim(), password);
       } else {
         await signUp(email.trim(), password);
+        setAwaitingConfirmation(true);
       }
       // Navigation is handled automatically by the auth guard in _layout.tsx
     } catch (e: any) {
@@ -49,8 +51,28 @@ export default function LoginScreen() {
           <Text style={styles.tagline}>All the community. None of the noise.</Text>
         </View>
 
+        {/* Confirmation screen */}
+        {awaitingConfirmation ? (
+          <View style={styles.card}>
+            <Text style={styles.confirmIcon}>📬</Text>
+            <Text style={styles.cardTitle}>Check your email</Text>
+            <Text style={styles.confirmText}>
+              We sent a confirmation link to{'\n'}<Text style={styles.confirmEmail}>{email.trim()}</Text>
+            </Text>
+            <Text style={styles.confirmSubtext}>
+              Click the link in the email to activate your account, then come back here to sign in.
+            </Text>
+            <TouchableOpacity
+              style={styles.submitBtn}
+              onPress={() => { setAwaitingConfirmation(false); setIsLogin(true); setPassword(''); }}
+            >
+              <Text style={styles.submitBtnText}>Back to Sign In</Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
+
         {/* Card */}
-        <View style={styles.card}>
+        {!awaitingConfirmation ? <View style={styles.card}>
           <Text style={styles.cardTitle}>{isLogin ? 'Welcome back' : 'Join the community'}</Text>
           <Text style={styles.cardSubtitle}>{isLogin ? 'Sign in to your account' : 'Create your free account'}</Text>
 
@@ -128,7 +150,7 @@ export default function LoginScreen() {
               <Text style={styles.toggleLink}>{isLogin ? 'Sign Up' : 'Sign In'}</Text>
             </Text>
           </TouchableOpacity>
-        </View>
+        </View> : null}
 
         {/* Footer */}
         <Text style={styles.footer}>By continuing you agree to our Terms of Service and Privacy Policy</Text>
@@ -172,4 +194,8 @@ const styles = StyleSheet.create({
   toggleText: { fontSize: 14, color: '#6b6560' },
   toggleLink: { color: '#3a5f3a', fontWeight: '700' },
   footer: { textAlign: 'center', fontSize: 11, color: 'rgba(164,184,144,0.4)', lineHeight: 16 },
+  confirmIcon: { fontSize: 40, textAlign: 'center', marginBottom: 12 },
+  confirmText: { fontSize: 15, color: '#6b6560', textAlign: 'center', marginBottom: 12, lineHeight: 22 },
+  confirmEmail: { fontWeight: '700', color: '#2c2825' },
+  confirmSubtext: { fontSize: 13, color: '#8e8e93', textAlign: 'center', marginBottom: 24, lineHeight: 20 },
 });
