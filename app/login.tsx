@@ -1,17 +1,41 @@
-import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useAuth } from '../context/AuthContext';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLogin, setIsLogin] = useState(true);
-  const router = useRouter();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
+
+  const { signIn, signUp } = useAuth();
+
+  async function handleSubmit() {
+    setError('');
+    if (!email.trim() || !password.trim()) {
+      setError('Please enter your email and password.');
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      if (isLogin) {
+        await signIn(email.trim(), password);
+      } else {
+        await signUp(email.trim(), password);
+      }
+      // Navigation is handled automatically by the auth guard in _layout.tsx
+    } catch (e: any) {
+      setError(e.message ?? 'Something went wrong. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-        
+
         {/* Background decoration */}
         <View style={styles.bgCircle1} />
         <View style={styles.bgCircle2} />
@@ -59,6 +83,7 @@ export default function LoginScreen() {
               onChangeText={setEmail}
               keyboardType="email-address"
               autoCapitalize="none"
+              editable={!isSubmitting}
             />
           </View>
 
@@ -72,6 +97,7 @@ export default function LoginScreen() {
               value={password}
               onChangeText={setPassword}
               secureTextEntry
+              editable={!isSubmitting}
             />
           </View>
 
@@ -81,24 +107,28 @@ export default function LoginScreen() {
             </TouchableOpacity>
           )}
 
+          {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
           {/* Submit Button */}
-          <TouchableOpacity style={styles.submitBtn}>
-            <Text style={styles.submitBtnText}>{isLogin ? 'Sign In' : 'Create Account'}</Text>
+          <TouchableOpacity
+            style={[styles.submitBtn, isSubmitting && styles.submitBtnDisabled]}
+            onPress={handleSubmit}
+            disabled={isSubmitting}
+          >
+            {isSubmitting
+              ? <ActivityIndicator color="white" />
+              : <Text style={styles.submitBtnText}>{isLogin ? 'Sign In' : 'Create Account'}</Text>
+            }
           </TouchableOpacity>
 
           {/* Toggle */}
-          <TouchableOpacity onPress={() => setIsLogin(!isLogin)} style={styles.toggle}>
+          <TouchableOpacity onPress={() => { setIsLogin(!isLogin); setError(''); }} style={styles.toggle}>
             <Text style={styles.toggleText}>
               {isLogin ? "Don't have an account? " : "Already have an account? "}
               <Text style={styles.toggleLink}>{isLogin ? 'Sign Up' : 'Sign In'}</Text>
             </Text>
           </TouchableOpacity>
         </View>
-
-      {/* Skip */}
-        <TouchableOpacity onPress={() => router.replace('/(tabs)')} style={styles.skipBtn}>
-          <Text style={styles.skipText}>Skip for now →</Text>
-        </TouchableOpacity>
 
         {/* Footer */}
         <Text style={styles.footer}>By continuing you agree to our Terms of Service and Privacy Policy</Text>
@@ -134,12 +164,12 @@ const styles = StyleSheet.create({
   input: { borderWidth: 1, borderColor: '#e5e5ea', borderRadius: 12, padding: 14, fontSize: 15, color: '#2c2825', backgroundColor: '#faf8f4' },
   forgotPassword: { alignSelf: 'flex-end', marginBottom: 20, marginTop: -6 },
   forgotPasswordText: { fontSize: 13, color: '#c8853a', fontWeight: '600' },
+  errorText: { fontSize: 13, color: '#c0392b', marginBottom: 12, textAlign: 'center' },
   submitBtn: { backgroundColor: '#3a5f3a', borderRadius: 14, padding: 16, alignItems: 'center', marginBottom: 16 },
+  submitBtnDisabled: { opacity: 0.6 },
   submitBtnText: { color: 'white', fontSize: 16, fontWeight: '700' },
   toggle: { alignItems: 'center' },
   toggleText: { fontSize: 14, color: '#6b6560' },
-toggleLink: { color: '#3a5f3a', fontWeight: '700' },
+  toggleLink: { color: '#3a5f3a', fontWeight: '700' },
   footer: { textAlign: 'center', fontSize: 11, color: 'rgba(164,184,144,0.4)', lineHeight: 16 },
-  skipBtn: { alignItems: 'center', marginBottom: 16 },
-  skipText: { fontSize: 13, color: 'rgba(164,184,144,0.6)', fontWeight: '600' },
 });
