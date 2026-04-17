@@ -32,6 +32,7 @@ type Post = {
     show_real_name: boolean;
     location_state: string | null;
     avatar_color: string | null;
+    avatar_url: string | null;
   } | null;
 };
 
@@ -68,7 +69,7 @@ export default function FeedScreen() {
     setLoading(true);
     const { data, error } = await supabase
       .from('posts')
-      .select('*, profiles(username, full_name, show_real_name, location_state, avatar_color), post_likes(user_id), comments(id)')
+      .select('*, profiles(username, full_name, show_real_name, location_state, avatar_color, avatar_url), post_likes(user_id), comments(id)')
       .order('created_at', { ascending: false });
 
     if (!error && data) setPosts(data as Post[]);
@@ -139,7 +140,10 @@ export default function FeedScreen() {
               <TouchableOpacity style={styles.card} onPress={() => router.push(`/post/${item.id}`)} activeOpacity={0.85}>
                 <View style={styles.cardHeader}>
                   <View style={[styles.avatar, { backgroundColor: color }]}>
-                    <Text style={styles.avatarText}>{getInitials(p?.username ?? '?')}</Text>
+                    {p?.avatar_url
+                      ? <Image source={{ uri: p.avatar_url }} style={styles.avatarImg} />
+                      : <Text style={styles.avatarText}>{getInitials(p?.username ?? '?')}</Text>
+                    }
                   </View>
                   <View style={styles.userInfo}>
                     <Text style={styles.userName}>{displayName}</Text>
@@ -202,6 +206,7 @@ const styles = StyleSheet.create({
   cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 },
   avatar: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
   avatarText: { color: 'white', fontWeight: '700', fontSize: 13 },
+  avatarImg: { width: 38, height: 38, borderRadius: 19 },
   userInfo: { flex: 1 },
   userName: { fontWeight: '600', fontSize: 14, color: '#2c2825' },
   userLocation: { fontSize: 12, color: '#6b6560', marginTop: 1 },

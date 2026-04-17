@@ -1,7 +1,8 @@
+import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import {
-  ActivityIndicator, Alert, Modal, ScrollView, StyleSheet,
+  ActivityIndicator, Alert, Image, Modal, ScrollView, StyleSheet,
   Text, TextInput, TouchableOpacity, View
 } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
@@ -58,6 +59,7 @@ export default function ProfileScreen() {
   const [locationStep, setLocationStep] = useState<LocationStep>('state');
   const [pendingState, setPendingState] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   useFocusEffect(useCallback(() => {
     fetchPosts();
@@ -73,6 +75,36 @@ export default function ProfileScreen() {
       .order('created_at', { ascending: false });
     setPosts((data as Post[]) ?? []);
     setLoadingPosts(false);
+  }
+
+  async function handleAvatarPress() {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission needed', 'Please allow access to your photo library.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.7,
+      base64: true,
+    });
+    if (result.canceled || !result.assets[0]?.base64) return;
+    setUploadingAvatar(true);
+    const base64 = result.assets[0].base64;
+    const path = `${user!.id}/avatar.jpg`;
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    const { error: uploadError } = await supabase.storage
+      .from('avatars')
+      .upload(path, bytes, { contentType: 'image/jpeg', upsert: true });
+    if (uploadError) { Alert.alert('Upload failed', uploadError.message); setUploadingAvatar(false); return; }
+    const { data } = supabase.storage.from('avatars').getPublicUrl(path);
+    await supabase.from('profiles').update({ avatar_url: data.publicUrl }).eq('id', user!.id);
+    await refreshProfile();
+    setUploadingAvatar(false);
   }
 
   function openEdit() {
@@ -184,9 +216,18 @@ export default function ProfileScreen() {
           <Text style={styles.editBtnText}>Edit Profile</Text>
         </TouchableOpacity>
 
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>{getInitials(profile?.username ?? '?')}</Text>
-        </View>
+        <TouchableOpacity style={styles.avatar} onPress={handleAvatarPress} disabled={uploadingAvatar}>
+          {uploadingAvatar ? (
+            <ActivityIndicator color="white" />
+          ) : profile?.avatar_url ? (
+            <Image source={{ uri: profile.avatar_url }} style={styles.avatarImage} />
+          ) : (
+            <Text style={styles.avatarText}>{getInitials(profile?.username ?? '?')}</Text>
+          )}
+          <View style={styles.avatarEditBadge}>
+            <Text style={styles.avatarEditBadgeText}>📷</Text>
+          </View>
+        </TouchableOpacity>
 
         <Text style={styles.username}>@{profile?.username ?? '…'}</Text>
         {displayName && <Text style={styles.realName}>{displayName}</Text>}
@@ -427,8 +468,11 @@ const styles = StyleSheet.create({
   header: { backgroundColor: '#1a2e1a', paddingTop: 60, paddingBottom: 28, alignItems: 'center' },
   editBtn: { position: 'absolute', top: 64, right: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)', borderRadius: 16, paddingHorizontal: 12, paddingVertical: 6 },
   editBtnText: { color: 'rgba(255,255,255,0.8)', fontSize: 13, fontWeight: '600' },
-  avatar: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#c8853a', alignItems: 'center', justifyContent: 'center', marginBottom: 12, borderWidth: 3, borderColor: 'rgba(255,255,255,0.15)' },
-  avatarText: { color: 'white', fontWeight: '700', fontSize: 26 },
+  avatar: { width: 100, height: 100, borderRadius: 50, backgroundColor: '#c8853a', alignItems: 'center', justifyContent: 'center', marginBottom: 12, borderWidth: 3, borderColor: 'rgba(255,255,255,0.15)' },
+  avatarImage: { width: 100, height: 100, borderRadius: 50 },
+  avatarText: { color: 'white', fontWeight: '700', fontSize: 30 },
+  avatarEditBadge: { position: 'absolute', bottom: 2, right: 2, width: 26, height: 26, borderRadius: 13, backgroundColor: '#1a2e1a', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#1a2e1a' },
+  avatarEditBadgeText: { fontSize: 12 },
   username: { fontWeight: '800', fontSize: 22, color: '#faf8f4', marginBottom: 2 },
   realName: { fontSize: 14, color: '#a4b890', marginBottom: 2 },
   location: { fontSize: 13, color: '#a4b890', marginBottom: 10 },

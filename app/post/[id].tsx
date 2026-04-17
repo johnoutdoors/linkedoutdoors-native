@@ -22,6 +22,7 @@ type Post = {
     full_name: string | null;
     show_real_name: boolean;
     avatar_color: string | null;
+    avatar_url: string | null;
   } | null;
 };
 
@@ -32,6 +33,7 @@ type Comment = {
   profiles: {
     username: string | null;
     avatar_color: string | null;
+    avatar_url: string | null;
   } | null;
 };
 
@@ -70,12 +72,12 @@ export default function PostScreen() {
     const [postRes, commentsRes] = await Promise.all([
       supabase
         .from('posts')
-        .select('*, profiles(username, full_name, show_real_name, avatar_color), post_likes(user_id)')
+        .select('*, profiles(username, full_name, show_real_name, avatar_color, avatar_url), post_likes(user_id)')
         .eq('id', id)
         .single(),
       supabase
         .from('comments')
-        .select('*, profiles(username, avatar_color)')
+        .select('*, profiles(username, avatar_color, avatar_url)')
         .eq('post_id', id)
         .order('created_at', { ascending: true }),
     ]);
@@ -144,7 +146,10 @@ export default function PostScreen() {
         <View style={styles.postCard}>
           <View style={styles.postHeader}>
             <View style={[styles.avatar, { backgroundColor: avatarColor }]}>
-              <Text style={styles.avatarText}>{getInitials(p?.username ?? '?')}</Text>
+              {p?.avatar_url
+                ? <Image source={{ uri: p.avatar_url }} style={styles.avatarImg} />
+                : <Text style={styles.avatarText}>{getInitials(p?.username ?? '?')}</Text>
+              }
             </View>
             <View style={styles.userInfo}>
               <Text style={styles.userName}>{displayName}</Text>
@@ -184,7 +189,10 @@ export default function PostScreen() {
           return (
             <View key={comment.id} style={styles.commentRow}>
               <View style={[styles.commentAvatar, { backgroundColor: cColor }]}>
-                <Text style={styles.commentAvatarText}>{getInitials(cp?.username ?? '?')}</Text>
+                {cp?.avatar_url
+                  ? <Image source={{ uri: cp.avatar_url }} style={styles.commentAvatarImg} />
+                  : <Text style={styles.commentAvatarText}>{getInitials(cp?.username ?? '?')}</Text>
+                }
               </View>
               <View style={styles.commentBubble}>
                 <View style={styles.commentTop}>
@@ -242,6 +250,7 @@ const styles = StyleSheet.create({
   postCard: { backgroundColor: 'white', borderRadius: 16, padding: 16, marginBottom: 8, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 4, shadowOffset: { width: 0, height: 1 } },
   postHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 },
   avatar: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center' },
+  avatarImg: { width: 42, height: 42, borderRadius: 21 },
   avatarText: { color: 'white', fontWeight: '700', fontSize: 14 },
   userInfo: { flex: 1 },
   userName: { fontWeight: '700', fontSize: 15, color: '#2c2825' },
@@ -255,6 +264,7 @@ const styles = StyleSheet.create({
   commentsLabel: { fontSize: 11, fontWeight: '700', color: '#8e8e93', letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 10, marginTop: 4 },
   commentRow: { flexDirection: 'row', gap: 10, marginBottom: 12 },
   commentAvatar: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginTop: 2 },
+  commentAvatarImg: { width: 32, height: 32, borderRadius: 16 },
   commentAvatarText: { color: 'white', fontWeight: '700', fontSize: 11 },
   commentBubble: { flex: 1, backgroundColor: 'white', borderRadius: 14, padding: 12, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 2, shadowOffset: { width: 0, height: 1 } },
   commentTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
