@@ -132,7 +132,7 @@ export default function PostScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Text style={styles.backText}>‹ Back</Text>
+          <Text style={styles.backText} numberOfLines={1}>‹ Back</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Post</Text>
         <View style={{ width: 60 }} />
@@ -234,7 +234,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#1a2e1a', paddingTop: 60, paddingBottom: 14, paddingHorizontal: 20,
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
   },
-  backBtn: { width: 80, flexShrink: 0 },
+  backBtn: { width: 100, flexShrink: 0 },
   backText: { color: '#a4b890', fontSize: 16, fontWeight: '600', flexShrink: 0 },
   headerTitle: { color: '#faf8f4', fontWeight: '700', fontSize: 16 },
   scroll: { flex: 1 },
