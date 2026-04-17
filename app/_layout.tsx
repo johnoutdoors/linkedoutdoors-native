@@ -12,13 +12,14 @@ function RootLayoutNav() {
 
     const inTabs = segments[0] === '(tabs)';
     const inOnboarding = segments[0] === 'onboarding';
+    const inPost = segments[0] === 'post';
 
     if (!user) {
-      if (inTabs || inOnboarding) router.replace('/login');
+      if (inTabs || inOnboarding || inPost) router.replace('/login');
     } else if (!profile?.username) {
       if (!inOnboarding) router.replace('/onboarding');
     } else {
-      if (!inTabs) router.replace('/(tabs)');
+      if (!inTabs && !inPost) router.replace('/(tabs)');
     }
   }, [user, profile, isLoading, segments]);
 
