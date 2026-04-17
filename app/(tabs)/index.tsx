@@ -1,4 +1,4 @@
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, FlatList, Image, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { supabase } from '../../lib/supabase';
@@ -53,6 +53,7 @@ function getAvatarColor(userId: string) {
 
 export default function FeedScreen() {
   const { user } = useAuth();
+  const router = useRouter();
   const [activeFilter, setActiveFilter] = useState('All');
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
@@ -134,7 +135,7 @@ export default function FeedScreen() {
             const color = p?.avatar_color ?? getAvatarColor(item.id);
             const location = item.location ?? p?.location_state ?? '';
             return (
-              <View style={styles.card}>
+              <TouchableOpacity style={styles.card} onPress={() => router.push(`/post/${item.id}`)} activeOpacity={0.85}>
                 <View style={styles.cardHeader}>
                   <View style={[styles.avatar, { backgroundColor: color }]}>
                     <Text style={styles.avatarText}>{getInitials(p?.username ?? '?')}</Text>
@@ -166,7 +167,7 @@ export default function FeedScreen() {
                     }
                   </TouchableOpacity>
                 </View>
-              </View>
+              </TouchableOpacity>
             );
           }}
         />
