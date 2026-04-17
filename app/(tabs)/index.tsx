@@ -2,6 +2,7 @@ import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, FlatList, Image, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../context/AuthContext';
 
 const FILTERS = ['All', '🎣 Fishing', '🥾 Hiking', '🛶 Kayaking', '🏕️ Camping', '🚵 Biking', '🦌 Hunting'];
 
@@ -21,9 +22,9 @@ type Post = {
   body: string;
   activity_tag: string | null;
   location: string | null;
-  helpful_count: number;
   image_url: string | null;
   created_at: string;
+  post_likes: { user_id: string }[];
   profiles: {
     username: string | null;
     full_name: string | null;
@@ -51,9 +52,11 @@ function getAvatarColor(userId: string) {
 }
 
 export default function FeedScreen() {
+  const { user } = useAuth();
   const [activeFilter, setActiveFilter] = useState('All');
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
+  const [liking, setLiking] = useState<string | null>(null);
 
   useFocusEffect(useCallback(() => {
     fetchPosts();
@@ -63,11 +66,24 @@ export default function FeedScreen() {
     setLoading(true);
     const { data, error } = await supabase
       .from('posts')
-      .select('*, profiles(username, full_name, show_real_name, location_state, avatar_color)')
+      .select('*, profiles(username, full_name, show_real_name, location_state, avatar_color), post_likes(user_id)')
       .order('created_at', { ascending: false });
 
     if (!error && data) setPosts(data as Post[]);
     setLoading(false);
+  }
+
+  async function toggleLike(post: Post) {
+    if (!user || liking) return;
+    setLiking(post.id);
+    const liked = post.post_likes.some(l => l.user_id === user.id);
+    if (liked) {
+      await supabase.from('post_likes').delete().eq('post_id', post.id).eq('user_id', user.id);
+    } else {
+      await supabase.from('post_likes').insert({ post_id: post.id, user_id: user.id });
+    }
+    await fetchPosts();
+    setLiking(null);
   }
 
   const filtered = activeFilter === 'All'
@@ -137,8 +153,17 @@ export default function FeedScreen() {
                   <Image source={{ uri: item.image_url }} style={styles.postImage} resizeMode="cover" />
                 )}
                 <View style={styles.actions}>
-                  <TouchableOpacity style={styles.actionBtn}>
-                    <Text style={styles.actionHelpful}>👍 Helpful · {item.helpful_count}</Text>
+                  <TouchableOpacity
+                    style={styles.actionBtn}
+                    onPress={() => toggleLike(item)}
+                    disabled={liking === item.id}
+                  >
+                    {liking === item.id
+                      ? <ActivityIndicator size="small" color="#3a5f3a" />
+                      : <Text style={[styles.actionHelpful, item.post_likes.some(l => l.user_id === user?.id) && styles.actionHelpfulLiked]}>
+                          👍 Helpful · {item.post_likes.length}
+                        </Text>
+                    }
                   </TouchableOpacity>
                 </View>
               </View>
@@ -179,5 +204,6 @@ const styles = StyleSheet.create({
   actions: { flexDirection: 'row', gap: 16 },
   actionBtn: { flexDirection: 'row', alignItems: 'center' },
   actionHelpful: { fontSize: 13, fontWeight: '600', color: '#3a5f3a' },
+  actionHelpfulLiked: { color: '#c8853a' },
   postImage: { width: '100%', height: 200, borderRadius: 10, marginBottom: 12 },
 });
