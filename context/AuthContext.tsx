@@ -11,6 +11,7 @@ export type Profile = {
   location_state: string | null;
   location_region: string | null;
   avatar_color: string | null;
+  role: string;
 };
 
 type AuthContextType = {
