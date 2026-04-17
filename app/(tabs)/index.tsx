@@ -25,6 +25,7 @@ type Post = {
   image_url: string | null;
   created_at: string;
   post_likes: { user_id: string }[];
+  comments: { id: string }[];
   profiles: {
     username: string | null;
     full_name: string | null;
@@ -67,7 +68,7 @@ export default function FeedScreen() {
     setLoading(true);
     const { data, error } = await supabase
       .from('posts')
-      .select('*, profiles(username, full_name, show_real_name, location_state, avatar_color), post_likes(user_id)')
+      .select('*, profiles(username, full_name, show_real_name, location_state, avatar_color), post_likes(user_id), comments(id)')
       .order('created_at', { ascending: false });
 
     if (!error && data) setPosts(data as Post[]);
@@ -166,6 +167,11 @@ export default function FeedScreen() {
                         </Text>
                     }
                   </TouchableOpacity>
+                  {item.comments.length > 0 && (
+                    <Text style={styles.actionComments}>
+                      💬 {item.comments.length}
+                    </Text>
+                  )}
                 </View>
               </TouchableOpacity>
             );
@@ -206,5 +212,6 @@ const styles = StyleSheet.create({
   actionBtn: { flexDirection: 'row', alignItems: 'center' },
   actionHelpful: { fontSize: 13, fontWeight: '600', color: '#3a5f3a' },
   actionHelpfulLiked: { color: '#c8853a' },
+  actionComments: { fontSize: 13, fontWeight: '600', color: '#8e8e93' },
   postImage: { width: '100%', height: 200, borderRadius: 10, marginBottom: 12 },
 });
