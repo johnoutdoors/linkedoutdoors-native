@@ -3,5 +3,6 @@ export const ACTIVITIES = [
   { label: 'Hiking', emoji: '🥾' },
   { label: 'Kayaking', emoji: '🛶' },
   { label: 'Camping', emoji: '🏕️' },
-  { label: 'Biking', emoji: '🚴' },
+  { label: 'Biking', emoji: '🚵' },
+  { label: 'Hunting', emoji: '🦌' },
 ];

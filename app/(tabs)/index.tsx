@@ -3,14 +3,15 @@ import { useCallback, useState } from 'react';
 import { ActivityIndicator, FlatList, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { supabase } from '../../lib/supabase';
 
-const FILTERS = ['All', '🎣 Fishing', '🥾 Hiking', '🛶 Kayaking', '🏕️ Camping', '🚴 Biking'];
+const FILTERS = ['All', '🎣 Fishing', '🥾 Hiking', '🛶 Kayaking', '🏕️ Camping', '🚵 Biking', '🦌 Hunting'];
 
 const ACTIVITY_FILTER_MAP: Record<string, string> = {
   '🎣 Fishing': 'Fishing',
   '🥾 Hiking': 'Hiking',
   '🛶 Kayaking': 'Kayaking',
   '🏕️ Camping': 'Camping',
-  '🚴 Biking': 'Biking',
+  '🚵 Biking': 'Biking',
+  '🦌 Hunting': 'Hunting',
 };
 
 const AVATAR_COLORS = ['#3a5f3a', '#c8853a', '#5c3d2e', '#7a9a6d', '#2a4a6a'];
