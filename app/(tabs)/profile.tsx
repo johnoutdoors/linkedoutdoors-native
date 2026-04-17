@@ -192,8 +192,17 @@ export default function ProfileScreen() {
         {displayName && <Text style={styles.realName}>{displayName}</Text>}
         {locationLabel && <Text style={styles.location}>📍 {locationLabel}</Text>}
 
-        <View style={styles.rankBadge}>
-          <Text style={styles.rankText}>{rank.emoji} {rank.label}</Text>
+        <View style={styles.badges}>
+          <View style={styles.rankBadge}>
+            <Text style={styles.rankText}>{rank.emoji} {rank.label}</Text>
+          </View>
+          {(profile?.role === 'admin' || profile?.role === 'moderator') && (
+            <View style={styles.roleBadge}>
+              <Text style={styles.roleText}>
+                {profile.role === 'admin' ? '⚡ Admin' : '🛡️ Moderator'}
+              </Text>
+            </View>
+          )}
         </View>
 
         <View style={styles.stats}>
@@ -423,8 +432,11 @@ const styles = StyleSheet.create({
   username: { fontWeight: '800', fontSize: 22, color: '#faf8f4', marginBottom: 2 },
   realName: { fontSize: 14, color: '#a4b890', marginBottom: 2 },
   location: { fontSize: 13, color: '#a4b890', marginBottom: 10 },
-  rankBadge: { paddingHorizontal: 14, paddingVertical: 5, borderRadius: 20, backgroundColor: 'rgba(200,133,58,0.25)', borderWidth: 1, borderColor: 'rgba(200,133,58,0.4)', marginBottom: 16 },
+  badges: { flexDirection: 'row', gap: 8, marginBottom: 16 },
+  rankBadge: { paddingHorizontal: 14, paddingVertical: 5, borderRadius: 20, backgroundColor: 'rgba(200,133,58,0.25)', borderWidth: 1, borderColor: 'rgba(200,133,58,0.4)' },
   rankText: { color: '#e0a85c', fontSize: 13, fontWeight: '700' },
+  roleBadge: { paddingHorizontal: 14, paddingVertical: 5, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.15)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)' },
+  roleText: { color: '#faf8f4', fontSize: 13, fontWeight: '700' },
   stats: { flexDirection: 'row' },
   stat: { alignItems: 'center' },
   statNum: { fontWeight: '700', fontSize: 20, color: '#faf8f4' },
