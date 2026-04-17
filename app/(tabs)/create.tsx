@@ -1,7 +1,8 @@
+import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
-  ActivityIndicator, Alert, KeyboardAvoidingView, Modal,
+  ActivityIndicator, Alert, Image, KeyboardAvoidingView, Modal,
   Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View
 } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
@@ -10,7 +11,6 @@ import { LOCATIONS, STATES, formatLocation } from '../../constants/locations';
 import { ACTIVITIES } from '../../constants/activities';
 
 const MAX_CHARS = 280;
-
 type LocationStep = 'state' | 'region';
 
 export default function CreateScreen() {
@@ -23,6 +23,7 @@ export default function CreateScreen() {
   const [locationStep, setLocationStep] = useState<LocationStep>('state');
   const [pendingState, setPendingState] = useState<string | null>(null);
   const [isPosting, setIsPosting] = useState(false);
+  const [photo, setPhoto] = useState<{ uri: string; base64: string | null | undefined } | null>(null);
   const { user, profile } = useAuth();
   const router = useRouter();
 
@@ -35,6 +36,43 @@ export default function CreateScreen() {
 
   const locationLabel = formatLocation(locationState, locationRegion);
   const selectedActivity = ACTIVITIES.find(a => a.label === activity);
+
+  async function pickPhoto() {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission needed', 'Please allow access to your photo library.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.5,
+      base64: true,
+    });
+    if (!result.canceled && result.assets[0]) {
+      setPhoto({ uri: result.assets[0].uri, base64: result.assets[0].base64 });
+    }
+  }
+
+  async function uploadPhoto(): Promise<string | null> {
+    if (!photo?.base64 || !user) return null;
+    const ext = 'jpg';
+    const path = `${user.id}/${Date.now()}.${ext}`;
+    const { error } = await supabase.storage
+      .from('post-images')
+      .upload(path, decode(photo.base64), { contentType: 'image/jpeg' });
+    if (error) { Alert.alert('Photo upload failed', error.message); return null; }
+    const { data } = supabase.storage.from('post-images').getPublicUrl(path);
+    return data.publicUrl;
+  }
+
+  function decode(base64: string): Uint8Array {
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return bytes;
+  }
 
   function openLocationPicker() {
     setLocationStep('state');
@@ -62,11 +100,15 @@ export default function CreateScreen() {
     if (!canPost) return;
     setIsPosting(true);
     const location = locationRegion ? `${locationRegion}, ${locationState}` : locationState;
+    const image_url = photo ? await uploadPhoto() : null;
+    if (photo && !image_url) { setIsPosting(false); return; }
+
     const { error } = await supabase.from('posts').insert({
       user_id: user!.id,
       body: postText.trim(),
       activity_tag: activity,
       location,
+      image_url,
     });
     setIsPosting(false);
     if (error) {
@@ -76,6 +118,7 @@ export default function CreateScreen() {
       setActivity(null);
       setLocationState(null);
       setLocationRegion(null);
+      setPhoto(null);
       router.replace('/(tabs)');
     }
   }
@@ -124,6 +167,16 @@ export default function CreateScreen() {
               autoFocus
             />
 
+            {/* Photo preview */}
+            {photo && (
+              <View style={styles.photoPreview}>
+                <Image source={{ uri: photo.uri }} style={styles.photoImage} />
+                <TouchableOpacity style={styles.photoRemove} onPress={() => setPhoto(null)}>
+                  <Text style={styles.photoRemoveText}>×</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
             {/* Required selectors */}
             <View style={styles.selectors}>
               {/* Activity */}
@@ -160,8 +213,8 @@ export default function CreateScreen() {
 
       {/* Bottom toolbar */}
       <View style={styles.toolbar}>
-        <TouchableOpacity style={styles.toolBtn}>
-          <Text style={styles.toolIcon}>📷</Text>
+        <TouchableOpacity style={styles.toolBtn} onPress={pickPhoto}>
+          <Text style={[styles.toolIcon, photo && styles.toolIconActive]}>📷</Text>
         </TouchableOpacity>
         <Text style={[styles.charCount, nearLimit && styles.charCountNear, overLimit && styles.charCountOver]}>
           {charsLeft}
@@ -173,7 +226,6 @@ export default function CreateScreen() {
         <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowLocationPicker(false)}>
           <View style={styles.modalSheet}>
             <View style={styles.modalHandle} />
-
             {locationStep === 'state' ? (
               <>
                 <Text style={styles.modalTitle}>Select State</Text>
@@ -259,6 +311,10 @@ const styles = StyleSheet.create({
   contentCol: { flex: 1, paddingTop: 2 },
   userName: { fontWeight: '700', fontSize: 15, color: '#2c2825', marginBottom: 6 },
   textInput: { fontSize: 17, lineHeight: 25, color: '#2c2825', minHeight: 100, textAlignVertical: 'top', marginBottom: 16 },
+  photoPreview: { marginBottom: 12, borderRadius: 12, overflow: 'hidden', position: 'relative' },
+  photoImage: { width: '100%', height: 200, borderRadius: 12 },
+  photoRemove: { position: 'absolute', top: 8, right: 8, backgroundColor: 'rgba(0,0,0,0.6)', width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  photoRemoveText: { color: 'white', fontSize: 18, lineHeight: 20 },
   selectors: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chipEmpty: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#d0d0d0', borderStyle: 'dashed', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
   chipEmptyText: { fontSize: 13, color: '#8e8e93', fontWeight: '500' },
@@ -273,6 +329,7 @@ const styles = StyleSheet.create({
   },
   toolBtn: { padding: 6 },
   toolIcon: { fontSize: 22 },
+  toolIconActive: { opacity: 0.5 },
   charCount: { fontSize: 14, fontWeight: '600', color: '#c0c0c0' },
   charCountNear: { color: '#c8853a' },
   charCountOver: { color: '#c0392b' },

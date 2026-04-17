@@ -1,6 +1,6 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, FlatList, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, FlatList, Image, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { supabase } from '../../lib/supabase';
 
 const FILTERS = ['All', '🎣 Fishing', '🥾 Hiking', '🛶 Kayaking', '🏕️ Camping', '🚵 Biking', '🦌 Hunting'];
@@ -22,6 +22,7 @@ type Post = {
   activity_tag: string | null;
   location: string | null;
   helpful_count: number;
+  image_url: string | null;
   created_at: string;
   profiles: {
     username: string | null;
@@ -132,6 +133,9 @@ export default function FeedScreen() {
                   <Text style={styles.time}>{timeAgo(item.created_at)}</Text>
                 </View>
                 <Text style={styles.body}>{item.body}</Text>
+                {item.image_url && (
+                  <Image source={{ uri: item.image_url }} style={styles.postImage} resizeMode="cover" />
+                )}
                 <View style={styles.actions}>
                   <TouchableOpacity style={styles.actionBtn}>
                     <Text style={styles.actionHelpful}>👍 Helpful · {item.helpful_count}</Text>
@@ -175,4 +179,5 @@ const styles = StyleSheet.create({
   actions: { flexDirection: 'row', gap: 16 },
   actionBtn: { flexDirection: 'row', alignItems: 'center' },
   actionHelpful: { fontSize: 13, fontWeight: '600', color: '#3a5f3a' },
+  postImage: { width: '100%', height: 200, borderRadius: 10, marginBottom: 12 },
 });
