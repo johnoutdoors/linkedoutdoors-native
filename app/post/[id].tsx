@@ -1,7 +1,7 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
-  ActivityIndicator, Image, KeyboardAvoidingView, Platform,
+  ActivityIndicator, Alert, Image, KeyboardAvoidingView, Platform,
   ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View
 } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
@@ -11,6 +11,7 @@ const AVATAR_COLORS = ['#3a5f3a', '#c8853a', '#5c3d2e', '#7a9a6d', '#2a4a6a'];
 
 type Post = {
   id: string;
+  user_id: string;
   body: string;
   activity_tag: string | null;
   location: string | null;
@@ -28,6 +29,7 @@ type Post = {
 
 type Comment = {
   id: string;
+  user_id: string;
   body: string;
   created_at: string;
   profiles: {
@@ -99,6 +101,18 @@ export default function PostScreen() {
     setLiking(false);
   }
 
+  function openCommentMenu(commentId: string) {
+    Alert.alert('Comment options', undefined, [
+      { text: 'Delete', style: 'destructive', onPress: () => deleteComment(commentId) },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  }
+
+  async function deleteComment(commentId: string) {
+    await supabase.from('comments').delete().eq('id', commentId);
+    await fetchAll();
+  }
+
   async function submitComment() {
     if (!commentText.trim() || !user || isSubmitting) return;
     setIsSubmitting(true);
@@ -158,7 +172,23 @@ export default function PostScreen() {
                 {post.activity_tag ? `${post.location ? ' · ' : ''}${post.activity_tag}` : ''}
               </Text>
             </View>
-            <Text style={styles.time}>{timeAgo(post.created_at)}</Text>
+            <View style={styles.postHeaderRight}>
+              <Text style={styles.time}>{timeAgo(post.created_at)}</Text>
+              {post.user_id === user?.id && (
+                <TouchableOpacity
+                  onPress={() => Alert.alert('Post options', undefined, [
+                    { text: 'Delete', style: 'destructive', onPress: async () => {
+                      await supabase.from('posts').delete().eq('id', post.id);
+                      router.back();
+                    }},
+                    { text: 'Cancel', style: 'cancel' },
+                  ])}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Text style={styles.menuDots}>···</Text>
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
 
           <Text style={styles.postBody}>{post.body}</Text>
@@ -186,6 +216,7 @@ export default function PostScreen() {
         {comments.map(comment => {
           const cp = comment.profiles;
           const cColor = cp?.avatar_color ?? getAvatarColor(comment.id);
+          const isOwnComment = comment.user_id === user?.id;
           return (
             <View key={comment.id} style={styles.commentRow}>
               <View style={[styles.commentAvatar, { backgroundColor: cColor }]}>
@@ -197,7 +228,14 @@ export default function PostScreen() {
               <View style={styles.commentBubble}>
                 <View style={styles.commentTop}>
                   <Text style={styles.commentUsername}>@{cp?.username ?? 'unknown'}</Text>
-                  <Text style={styles.commentTime}>{timeAgo(comment.created_at)}</Text>
+                  <View style={styles.commentTopRight}>
+                    <Text style={styles.commentTime}>{timeAgo(comment.created_at)}</Text>
+                    {isOwnComment && (
+                      <TouchableOpacity onPress={() => openCommentMenu(comment.id)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                        <Text style={styles.menuDots}>···</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
                 </View>
                 <Text style={styles.commentBody}>{comment.body}</Text>
               </View>
@@ -256,6 +294,8 @@ const styles = StyleSheet.create({
   userName: { fontWeight: '700', fontSize: 15, color: '#2c2825' },
   postMeta: { fontSize: 12, color: '#6b6560', marginTop: 1 },
   time: { fontSize: 11, color: '#8e8e93' },
+  postHeaderRight: { alignItems: 'flex-end', gap: 4 },
+  menuDots: { fontSize: 18, color: '#c0c0c0', fontWeight: '700' },
   postBody: { fontSize: 16, lineHeight: 24, color: '#2c2825', marginBottom: 12 },
   postImage: { width: '100%', height: 220, borderRadius: 12, marginBottom: 12 },
   likeBtn: { paddingVertical: 8, borderTopWidth: 0.5, borderTopColor: '#f2f2f7', alignItems: 'flex-start' },
@@ -267,7 +307,8 @@ const styles = StyleSheet.create({
   commentAvatarImg: { width: 32, height: 32, borderRadius: 16 },
   commentAvatarText: { color: 'white', fontWeight: '700', fontSize: 11 },
   commentBubble: { flex: 1, backgroundColor: 'white', borderRadius: 14, padding: 12, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 2, shadowOffset: { width: 0, height: 1 } },
-  commentTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
+  commentTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4, gap: 8 },
+  commentTopRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   commentUsername: { fontWeight: '700', fontSize: 13, color: '#2c2825' },
   commentTime: { fontSize: 11, color: '#c0c0c0' },
   commentBody: { fontSize: 14, lineHeight: 20, color: '#2c2825' },
